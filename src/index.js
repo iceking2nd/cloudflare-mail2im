@@ -2,51 +2,58 @@ import {getRuleConfig} from "./rule/rule";
 import {parseEmail,generateContent} from "./parser";
 import {send as sendMessageBySlack} from "./slack/send_message.js";
 import {sendAttachments as sendAttachmentsBySlack} from "./slack/send_attachments.js";
+import {handleAsyncOperation} from "./utils.js";
 
 export default {
 	async email(event, env, ctx) {
 		try {
+			// Parse the incoming email
 			const parsedEmail = await parseEmail(event.to, event.raw, event.rawSize);
-			const msg = generateContent(parsedEmail,event.to,event.from);
+			// Generate content based on the parsed email
+			const msg = generateContent(parsedEmail, event.to, event.from);
 
-			const rule_config = JSON.parse(await getRuleConfig(env.KV, event.to));
-			if (rule_config === null) {
+			// Retrieve rule configuration for the recipient
+			const ruleConfig = JSON.parse(await getRuleConfig(env.KV, event.to));
+			if (ruleConfig === null) {
+				// If no rule configuration is found, reject the email
 				await event.setReject('user not found');
 				return;
 			}
-			switch (rule_config.im_type) {
+
+			// Process the email based on the configured IM type
+			switch (ruleConfig.im_type) {
 				case 'slack':
-					await sendMessageBySlack(msg, rule_config).catch(async err => {
-						console.error("send msg error: ", err)
-						throw err;
-					});
+					// Send the message to Slack
+					await handleAsyncOperation(() => sendMessageBySlack(msg, ruleConfig), "Failed to send message to Slack");
+
+					// If there are attachments, send them to Slack
 					if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
-						// 处理附件
-						await sendAttachmentsBySlack(parsedEmail.attachments, rule_config).then(async (res) => {
-							const res_json = await res.json();
-							console.debug("send attachments result: ", JSON.stringify(res_json, null, 2));
+						await handleAsyncOperation(async () => {
+							const res = await sendAttachmentsBySlack(parsedEmail.attachments, ruleConfig);
+							const resJson = await res.json();
+							console.debug("Slack attachment send result:", JSON.stringify(resJson, null, 2));
 							if (!res.ok) {
-								throw new Error("send attachments error");
+								throw new Error("Failed to send attachments to Slack");
 							}
-						}).catch(async (err) => {
-							console.error("send attachments error: ", err)
-							throw err;
-						})
+						}, "Failed to send attachments to Slack");
 					}
 					break;
 
 				case 'dingtalk':
-					// 在此添加钉钉的处理逻辑
+					// Add DingTalk processing logic here
 					break;
 
 				default:
-					// 不支持的类型
+					// If the IM type is not supported, reject the email
 					await event.setReject('unsupported im type');
 					break;
 			}
 		} catch (error) {
+			// Log any errors that occur during processing
 			console.error('Error processing email:', error);
+			// Reject the email with an internal error message
 			await event.setReject('internal error');
 		}
 	}
 };
+

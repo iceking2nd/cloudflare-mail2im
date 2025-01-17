@@ -1,39 +1,47 @@
 import _ from 'lodash';
 
+/**
+ * Retrieves the rule configuration for a given destination address from a KV client.
+ *
+ * @param {Object} kv_client - The KV client to interact with the key-value store.
+ * @param {string} destination - The destination address to match against the rules.
+ * @returns {Promise<Object|null>} A Promise that resolves to the rule configuration if a match is found, or null if no match is found.
+ * @throws {Error} If an error occurs while obtaining the rule configuration.
+ */
 export async function getRuleConfig(kv_client, destination) {
 	try {
-		// 获取规则列表
+		// Get the rule list
 		const ruleList = await kv_client.list();
-		console.log('获取到的规则列表:', ruleList);
+		console.log('Obtained rule list:', ruleList);
 
-		// 遍历规则
+		// Traverse the rules
 		for (const rule of _.get(ruleList, 'keys', [])) {
 			try {
-				// 构建安全的正则表达式
-				const re = new RegExp(`^${_.escapeRegExp(rule.name)}$`, 'g');
-				console.log('生成的正则表达式:', re);
+				// Build a regular expression
+				const re = new RegExp(`^${rule.name}$`, 'g');
+				console.log('Generated regular expression:', re);
 
-				// 检查目标地址是否匹配规则
+				// Check if the destination address matches the rule
 				if (re.test(destination)) {
-					console.log('匹配到规则:', rule.name, '目标地址:', destination);
+					console.log('Matched rule:', rule.name, 'Destination address:', destination);
 
-					// 获取对应的规则配置
+					// Get the corresponding rule configuration
 					const ruleConfig = await kv_client.get(rule.name);
-					console.log('获取到的规则配置:', ruleConfig);
+					console.log('Obtained rule configuration:', ruleConfig);
 
-					// 找到匹配规则，立即返回
+					// Found a matching rule, return immediately
 					return ruleConfig;
 				}
 			} catch (regexError) {
-				console.error('创建正则表达式时发生错误:', rule.name, regexError);
+				console.error('Error occurred while creating regular expression:', rule.name, regexError);
 			}
 		}
 
-		// 如果未找到匹配规则
-		console.log('未找到匹配的规则');
+		// If no matching rule is found
+		console.log('No matching rule found');
 		return null;
 	} catch (error) {
-		console.error('获取规则配置时发生错误:', error);
+		console.error('Error occurred while obtaining rule configuration:', error);
 		throw error;
 	}
 }
