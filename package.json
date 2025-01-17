@@ -1,0 +1,21 @@
+{
+  "name": "cloudflare-mail2im",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.2",
+    "vitest": "2.1.8",
+    "wrangler": "^3.60.3"
+  },
+  "dependencies": {
+    "html-to-text": "^9.0.5",
+    "lodash": "^4.17.21",
+    "postal-mime": "^2.4.1"
+  }
+}
