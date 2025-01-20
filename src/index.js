@@ -7,6 +7,13 @@ import {sendAttachments as sendAttachmentsByDingTalk} from "./dingtalk/send_atta
 import {handleAsyncOperation} from "./utils.js";
 
 export default {
+	/**
+	 * Handles incoming email events.
+	 *
+	 * @param {Object} event - The email event object.
+	 * @param {Object} env - The environment object.
+	 * @param {Object} ctx - The context object.
+	 */
 	async email(event, env, ctx) {
 		try {
 			// Parse the incoming email
@@ -70,6 +77,14 @@ export default {
 		}
 	},
 
+	/**
+	 * Handles incoming HTTP fetch requests.
+	 *
+	 * @param {Request} request - The incoming HTTP request.
+	 * @param {Object} env - The environment object.
+	 * @param {Object} ctx - The context object.
+	 * @returns {Response} The HTTP response.
+	 */
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 		const id = url.pathname.slice(1).toLowerCase();
@@ -89,4 +104,3 @@ export default {
 		return new Response('Bad request', { status: 400 });
 	},
 };
-

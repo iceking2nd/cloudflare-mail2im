@@ -1,6 +1,13 @@
 import _ from 'lodash';
 const crypto = require('crypto');
 
+/**
+ * Sends a message to DingTalk.
+ *
+ * @param {Object} body - The message body object.
+ * @param {Object} config - Configuration object containing DingTalk API token and other settings.
+ * @returns {Promise} A Promise that resolves when the message is sent successfully, or rejects if the configuration is invalid or an error occurs.
+ */
 export async function send(body, config) {
 	try {
 		if (!validateConfig(config)) {
@@ -21,6 +28,12 @@ export async function send(body, config) {
 	}
 }
 
+/**
+ * Validates the configuration object.
+ *
+ * @param {Object} config - Configuration object containing DingTalk API token and other settings.
+ * @returns {boolean} True if the configuration is valid, false otherwise.
+ */
 function validateConfig(config) {
 	if (!_.isObject(config)) {
 		console.debug('config is not an object')
@@ -37,6 +50,13 @@ function validateConfig(config) {
 	return !(config.im_config.secret.length <= 0 && config.im_config.keyword.length <= 0);
 }
 
+/**
+ * Sends a message to DingTalk using the DingTalk API.
+ *
+ * @param {Object} body - The message body object.
+ * @param {Object} config - Configuration object containing DingTalk API token and other settings.
+ * @returns {Promise} A Promise that resolves with the response from the DingTalk API.
+ */
 async function sendMessageToDingTalk(body, config) {
 	let url = `https://oapi.dingtalk.com/robot/send?access_token=${config.token}`;
 	if (_.isString(config.secret) && config.secret.length > 0) {
@@ -52,6 +72,12 @@ async function sendMessageToDingTalk(body, config) {
 	});
 }
 
+/**
+ * Calculates the signature for the DingTalk API request.
+ *
+ * @param {string} secret - The secret key for the DingTalk API.
+ * @returns {string} The calculated signature.
+ */
 function calcSign(secret) {
 	const timestamp = +new Date();
 	const stringToSign = `${timestamp}\n${secret}`;
@@ -61,6 +87,13 @@ function calcSign(secret) {
 	return encodeURIComponent(sign);
 }
 
+/**
+ * Generates the text content for DingTalk messages.
+ *
+ * @param {string} text - The text content of the message.
+ * @param {string} keyword - A keyword to be included in the message.
+ * @returns {Object} The message body object.
+ */
 export function generateDingTalkTextContent(text, keyword){
 	console.debug("generating dingtalk text content")
 	console.debug("text: ",text)

@@ -1,3 +1,12 @@
+/**
+ * Sends a list of attachments to DingTalk.
+ *
+ * @param {Array} attachments - An array of attachment objects to be sent.
+ * @param {Object} r2client - R2 client for uploading files.
+ * @param {string} prefix - The prefix URL for the uploaded files.
+ * @param {Object} config - Configuration object containing DingTalk API token and other settings.
+ * @returns {Promise} A Promise that resolves when the attachments are sent successfully, or rejects if all uploads fail.
+ */
 import { send } from './send_message';
 
 const uuid = require("uuid");
@@ -36,12 +45,20 @@ export async function sendAttachments(attachments, r2client, prefix, config) {
 	}
 }
 
-function generateAttachmentMessageBody(successed_results,failed_results,keyword) {
+/**
+ * Generates the message body for attachments in DingTalk.
+ *
+ * @param {Array} successed_results - An array of successfully uploaded attachments.
+ * @param {Array} failed_results - An array of failed attachments.
+ * @param {string} keyword - A keyword to be included in the message.
+ * @returns {Object} The message body object.
+ */
+function generateAttachmentMessageBody(successed_results, failed_results, keyword) {
 	let body = {}
 	body.msgtype = "actionCard"
 	body.actionCard = {
-		title: `邮件存在${successed_results.length+failed_results.length}个附件`,
-		text: `成功上传${successed_results.length}个附件:\n失败${failed_results.length}个附件\n附件链接存在有效期，请尽快下载……\n\n`,
+		title: `${successed_results.length + failed_results.length} attachments in the email`,
+		text: `Successfully uploaded ${successed_results.length} attachments:\nFailed to upload ${failed_results.length} attachments\nAttachment links have an expiration date, please download them as soon as possible...\n\n`,
 		btnOrientation: 0,
 		btns: []
 	}
@@ -53,7 +70,7 @@ function generateAttachmentMessageBody(successed_results,failed_results,keyword)
 		})
 	}
 	for (const attachment of failed_results) {
-		body.actionCard.text += `- [${attachment.filename}] 失败\n`
+		body.actionCard.text += `- [${attachment.filename}] failed\n`
 	}
 	if (keyword.length > 0) body.actionCard.text += `\n${keyword}`
 	return body
