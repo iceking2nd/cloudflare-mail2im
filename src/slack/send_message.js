@@ -19,9 +19,11 @@ export async function send(text, config) {
 
 		// Send the message to the Slack channel using the Slack API
 		const response = await sendMessageToSlack(text, config.im_config.channel_id, config.im_config.token);
+		const responseClone = response.clone();
 
 		// Log the response from the Slack API for debugging purposes
-		console.debug("slack response: ", response);
+		const respJson = await responseClone.json();
+		console.debug("slack response: ", respJson);
 
 		// Check if the message was sent successfully
 		if (!response.ok) {

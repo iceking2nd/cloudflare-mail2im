@@ -1,6 +1,16 @@
 name: Deploy
 
 on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Choose an environment to deploy to: <dev|staging|prod>"
+                required: true
+                default: "prod"
+                options:
+                    - dev
+                    - staging
+                    - prod
     push:
         branches:
             - main
@@ -17,3 +27,4 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   wranglerVersion: "3.103.2"
+                  command: deploy --env ${{ github.event.inputs.environment }}

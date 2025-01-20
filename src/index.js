@@ -2,6 +2,8 @@ import {getRuleConfig} from "./rule/rule";
 import {parseEmail,generateContent} from "./parser";
 import {send as sendMessageBySlack} from "./slack/send_message.js";
 import {sendAttachments as sendAttachmentsBySlack} from "./slack/send_attachments.js";
+import {send as sendMessageByDingTalk, generateDingTalkTextContent} from "./dingtalk/send_message.js";
+import {sendAttachments as sendAttachmentsByDingTalk} from "./dingtalk/send_attachments.js";
 import {handleAsyncOperation} from "./utils.js";
 
 export default {
@@ -41,6 +43,18 @@ export default {
 
 				case 'dingtalk':
 					// Add DingTalk processing logic here
+					await handleAsyncOperation(() => sendMessageByDingTalk(generateDingTalkTextContent(msg,ruleConfig.im_config.keyword), ruleConfig), "Failed to send message to DingTalk")
+
+					if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
+						await handleAsyncOperation(async () => {
+							const res = await sendAttachmentsByDingTalk(parsedEmail.attachments, env.R2, env.STORAGE_URL_PREFIX, ruleConfig);
+							const resJson = await res.json();
+							console.debug("DingTalk attachment send result:", JSON.stringify(resJson, null, 2));
+							if(!res.ok) {
+								throw new Error("Failed to send attachments to DingTalk");
+							}
+						},"Failed to send attachments to DingTalk")
+					}
 					break;
 
 				default:
@@ -54,6 +68,25 @@ export default {
 			// Reject the email with an internal error message
 			await event.setReject('internal error');
 		}
-	}
+	},
+
+	async fetch(request, env, ctx) {
+		const url = new URL(request.url);
+		const id = url.pathname.slice(1).toLowerCase();
+		console.debug("file id: ", id)
+		const re = new RegExp('^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$')
+		if (re.test(id)) {
+			const file = await env.R2.get(id);
+			if (file) {
+				const headers = new Headers();
+				headers.set('Content-Type', file.httpMetadata.contentType);
+				console.debug("file content type: ", file.httpMetadata.contentType)
+				headers.set('Content-Disposition', `attachment; filename="${file.customMetadata.filename}"`);
+				console.debug("file content disposition filename: ", file.customMetadata.filename)
+				return new Response(file.body, { headers });
+			}
+		}
+		return new Response('Bad request', { status: 400 });
+	},
 };
 
