@@ -55,6 +55,6 @@ function generateAttachmentMessageBody(successed_results,failed_results,keyword)
 	for (const attachment of failed_results) {
 		body.actionCard.text += `- [${attachment.filename}] 失败\n`
 	}
-	if (keyword.length > 0) body.actionCard.text += keyword
+	if (keyword.length > 0) body.actionCard.text += `\n${keyword}`
 	return body
 }
