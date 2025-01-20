@@ -6,7 +6,7 @@ on:
             environment:
                 description: "Choose an environment to deploy to: <dev|staging|prod>"
                 required: true
-                default: "prod"
+                default: "dev"
                 options:
                     - dev
                     - staging
