@@ -1,10 +1,9 @@
 import {getRuleConfig} from "./rule/rule";
 import {parseEmail,generateContent} from "./parser";
-import {send as sendMessageBySlack} from "./slack/send_message.js";
-import {sendAttachments as sendAttachmentsBySlack} from "./slack/send_attachments.js";
-import {send as sendMessageByDingTalk, generateDingTalkTextContent} from "./dingtalk/send_message.js";
-import {sendAttachments as sendAttachmentsByDingTalk} from "./dingtalk/send_attachments.js";
 import {handleAsyncOperation} from "./utils.js";
+import slack from './slack.js'
+import dingtalk from './dingtalk.js'
+import telegram from './telegram.js';
 
 export default {
 	async email(event, env, ctx) {
@@ -26,12 +25,12 @@ export default {
 			switch (ruleConfig.im_type) {
 				case 'slack':
 					// Send the message to Slack
-					await handleAsyncOperation(() => sendMessageBySlack(msg, ruleConfig), "Failed to send message to Slack");
+					await handleAsyncOperation(() => slack.send(msg, ruleConfig), "Failed to send message to Slack");
 
 					// If there are attachments, send them to Slack
 					if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
 						await handleAsyncOperation(async () => {
-							const res = await sendAttachmentsBySlack(parsedEmail.attachments, ruleConfig);
+							const res = await slack.attachments(parsedEmail.attachments, ruleConfig);
 							const resJson = await res.json();
 							console.debug("Slack attachment send result:", JSON.stringify(resJson, null, 2));
 							if (!res.ok) {
@@ -43,11 +42,11 @@ export default {
 
 				case 'dingtalk':
 					// Add DingTalk processing logic here
-					await handleAsyncOperation(() => sendMessageByDingTalk(generateDingTalkTextContent(msg,ruleConfig.im_config.keyword), ruleConfig), "Failed to send message to DingTalk")
+					await handleAsyncOperation(() => dingtalk.send(dingtalk.generateTextContent(msg,ruleConfig.im_config.keyword), ruleConfig), "Failed to send message to DingTalk")
 
 					if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
 						await handleAsyncOperation(async () => {
-							const res = await sendAttachmentsByDingTalk(parsedEmail.attachments, env.R2, env.STORAGE_URL_PREFIX, ruleConfig);
+							const res = await dingtalk.attachments(parsedEmail.attachments, env.R2, env.STORAGE_URL_PREFIX, ruleConfig);
 							const resJson = await res.json();
 							console.debug("DingTalk attachment send result:", JSON.stringify(resJson, null, 2));
 							if(!res.ok) {
@@ -56,6 +55,16 @@ export default {
 						},"Failed to send attachments to DingTalk")
 					}
 					break;
+
+					case 'telegram':
+						await handleAsyncOperation(() => telegram.send(msg, ruleConfig), "Failed to send message to Telegram")
+						if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
+							await handleAsyncOperation(async () => {
+								const res = await telegram.attachments(parsedEmail.attachments, env.R2,  env.STORAGE_URL_PREFIX, ruleConfig);
+								console.debug("Telegram attachment send result:", JSON.stringify(res));
+							}, "Failed to send attachments to Telegram")
+						}
+						break;
 
 				default:
 					// If the IM type is not supported, reject the email
