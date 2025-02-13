@@ -106,6 +106,11 @@ export function buf2hex(buffer) { // buffer is an ArrayBuffer
 }
 
 // Helper function to handle asynchronous operations with error logging
+/**
+ * Helper function to handle asynchronous operations with error logging.
+ * @param {Function} operation - The asynchronous operation to be performed.
+ * @param {string} errorMessage - The error message to be logged if the operation fails.
+ */
 export async function handleAsyncOperation(operation, errorMessage) {
 	try {
 		await operation();
