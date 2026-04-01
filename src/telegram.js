@@ -12,9 +12,18 @@ export default {
 
 			console.debug('delivering to telegram chat ', config.im_config.chat_id, 'with token ', config.im_config.token);
 			const bot = new Telegraf(config.im_config.token);
-			const response = await bot.telegram.sendMessage(config.im_config.chat_id, text);
-			console.debug('telegram response: ', JSON.stringify(response));
-			return response;
+
+			const MAX_LENGTH = 4096;
+			const messages = splitMessage(text, MAX_LENGTH);
+
+			const responses = [];
+			for (const message of messages) {
+				const response = await bot.telegram.sendMessage(config.im_config.chat_id, message);
+				responses.push(response);
+			}
+
+			console.debug('telegram responses: ', JSON.stringify(responses));
+			return responses;
 		} catch (error) {
 			// Log the error for debugging purposes
 			console.error('Error sending message to telegram: ', error);
@@ -55,6 +64,42 @@ function validateConfig(config) {
 		_.isNumber(config.im_config.chat_id) &&
 		config.im_config.token.length > 0 &&
 		config.im_config.chat_id > 0;
+}
+
+function splitMessage(text, maxLength = 4096) {
+	if (!text || text.length <= maxLength) {
+		return [text];
+	}
+
+	const messages = [];
+	let remaining = text;
+
+	while (remaining.length > 0) {
+		if (remaining.length <= maxLength) {
+			messages.push(remaining);
+			break;
+		}
+
+		// 尝试在换行符处分割
+		let splitIndex = maxLength;
+		let lastNewline = remaining.lastIndexOf('\n', maxLength);
+
+		// 如果最后有换行符，在其后分割
+		if (lastNewline !== -1 && lastNewline > 0) {
+			splitIndex = lastNewline + 1;
+		} else {
+			// 否则尝试在空格处分割
+			let lastSpace = remaining.lastIndexOf(' ', maxLength);
+			if (lastSpace !== -1 && lastSpace > 0) {
+				splitIndex = lastSpace + 1;
+			}
+		}
+
+		messages.push(remaining.substring(0, splitIndex));
+		remaining = remaining.substring(splitIndex);
+	}
+
+	return messages;
 }
 
 function arrayBufferToStream(arrayBuffer) {
